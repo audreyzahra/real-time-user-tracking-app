@@ -35,8 +35,10 @@ Instalasi npm :
 npm install
 ```
 
-**Buatlah File .env.local**
+## File .env.local
+```bash
 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
+```
 
 ## Jalankan Aplikasi
 ```bash
