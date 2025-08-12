@@ -38,7 +38,7 @@ export default function Sidebar() {
             </div>
             <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {results.length > 0 && (
-                    <p style={{ margin: '8px 0', textAlign: 'center', fontWeight: 500, color: '#D21F1F' }}>Click User To Follow</p>
+                    <p style={{ margin: '8px 0', textAlign: 'center', fontWeight: 500 }}>Click User To Follow</p>
                 )}
                 {results.map((u) => (
                     <div
@@ -72,14 +72,6 @@ export default function Sidebar() {
             </div>
             <div style={{ margin: '8px 0' }}>
                 <strong>Total users:</strong> {users.length}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <button onClick={() => {
-                    setFollowUserId(null)
-                    setIsFollowing(false)
-                }}>
-                    Unfollow
-                </button>
             </div>
         </div>
     )
