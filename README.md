@@ -44,3 +44,7 @@ NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
 ```bash
 npm run dev
 ```
+
+## Aplikasi akan berjalan di
+http://localhost:3000
+---
