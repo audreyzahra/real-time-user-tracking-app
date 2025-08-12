@@ -1,47 +1,72 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUserStore } from '@/store/useUserStore'
+import mapboxgl from 'mapbox-gl'
 
 export default function Sidebar() {
-    const users = useUserStore((s) => s.users)
-    const setFollowUserId = useUserStore((s) => s.setFollowUserId)
-    const [searchTerm, setSearchTerm] = useState('')
+    const popupRef = useRef<mapboxgl.Popup | null>(null)
     const [q, setQ] = useState('')
 
-    useEffect(() => {
-    const t = setTimeout(() => setQ(searchTerm), 200) // delay 200ms
-    return () => clearTimeout(t)
-    }, [searchTerm])
+    const users = useUserStore((s) => s.users)
+    const setFollowUserId = useUserStore((s) => s.setFollowUserId)
+    const followUserId = useUserStore((s) => s.followUserId)
+    const setIsFollowing = useUserStore((s) => s.setIsFollowing)
+    const isFollowing = useUserStore((s) => s.isFollowing)
 
     const results = q ? users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()) || u.id.includes(q)) : []
 
     return (
         <div className="sidebar">
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 8}}>
                 <input
                     placeholder="Search by ID or Name"
                     value={q}
-                    onChange={(e) => setQ(e.target.value)}
+                    onChange={(e) => {
+                        if (popupRef.current) {
+                            popupRef.current.remove()
+                            popupRef.current = null
+                        }
+                        if (e.target.value === '') {
+                            setFollowUserId(null)
+                        }
+                        else {
+                            setFollowUserId(null)
+                        }
+                        setQ(e.target.value)
+                    }}
                 />
             </div>
             <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {results.length > 0 && (
-                    <p style={{ margin: '8px 0', fontWeight: 500 }}>Click User To Follow</p>
+                    <p style={{ margin: '8px 0', textAlign: 'center', fontWeight: 500, color: '#D21F1F' }}>Click User To Follow</p>
                 )}
                 {results.map((u) => (
                     <div
                         key={u.id}
                         style={{
+                            backgroundColor: 'rgba(75, 86, 109, 0.7)',
+                            borderRadius: 8,
                             display: 'flex',
-                            alignItems: 'center',
+                            justifyContent: 'space-between',
                             cursor: 'pointer',
-                            padding: '4px 0',
                             gap: 8,
+                            padding: '4px 8px',
+                            marginTop: 8,
+                            marginBottom: 8,
                         }}
-                        onClick={() => setFollowUserId(u.id)}
+                        onClick={() => {
+                                setFollowUserId(u.id)
+                                setIsFollowing(true)
+                            }
+                        }
                     >
-                        <p style={{ margin: 0 }}>{u.name}</p>
-                        <small style={{ color: '#888' }}>({u.id})</small>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <p style={{ margin: 0 }}>{u.name}</p>
+                            <small style={{ color: '#888' }}>({u.id})</small>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {isFollowing && followUserId === u.id && <small style={{ backgroundColor: '#10b981', padding: '2px 4px', borderRadius: '4px' }}>Following</small>}
+                        </div>
                     </div>
                 ))}
             </div>
@@ -49,7 +74,12 @@ export default function Sidebar() {
                 <strong>Total users:</strong> {users.length}
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-                <button onClick={() => setFollowUserId(null)}>Unfollow</button>
+                <button onClick={() => {
+                    setFollowUserId(null)
+                    setIsFollowing(false)
+                }}>
+                    Unfollow
+                </button>
             </div>
         </div>
     )

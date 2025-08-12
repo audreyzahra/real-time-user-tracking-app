@@ -21,6 +21,7 @@ body {
 
 .sidebar {
   position: absolute;
+  width: 250px;
   left: 12px;
   top: 12px;
   z-index: 10;
@@ -28,6 +29,14 @@ body {
   color: white;
   padding: 12px;
   border-radius: 8px;
+}
+
+.sidebar input {
+  width: 100%; /* Full lebar sidebar */
+  box-sizing: border-box; /* Ikut hitung padding & border */
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
 }
 
 button {

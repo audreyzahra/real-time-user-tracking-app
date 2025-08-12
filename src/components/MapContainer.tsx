@@ -12,9 +12,14 @@ export default function MapContainer() {
     const mapRef = useRef<mapboxgl.Map | null>(null)
     const markersRef = useRef<Record<string, mapboxgl.Marker>>({})
     const popupRef = useRef<mapboxgl.Popup | null>(null)
+    const activePopupUserId = useRef<string | null>(null)
+    const isFollowingRef = useRef<boolean>(false)
+
     const setUsers = useUserStore((s) => s.setUsers)
     const followUserId = useUserStore((s) => s.followUserId)
     const setFollowUserId = useUserStore((s) => s.setFollowUserId)
+    const isFollowing = useUserStore((s) => s.isFollowing)
+    const setIsFollowing = useUserStore((s) => s.setIsFollowing)
 
     useEffect(() => {
         if (mapRef.current) return
@@ -27,84 +32,143 @@ export default function MapContainer() {
 
         mapRef.current.addControl(new mapboxgl.NavigationControl())
 
-        popupRef.current = new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
+        popupRef.current = new mapboxgl.Popup({
+            closeButton: true,
+            closeOnClick: false,
+            anchor: 'bottom',
+            offset: [0, -10]
+        })
+
+        popupRef.current.on('close', () => {
+            activePopupUserId.current = null
+            if (isFollowing) {
+                setFollowUserId(null)
+                setIsFollowing(false)
+                popupRef.current?.remove()
+                activePopupUserId.current = null
+            }
+        })
+
+        mapRef.current.on('click', (e) => {
+            try {
+                const orig = (e.originalEvent as MouseEvent | undefined)
+                const el = orig?.target as HTMLElement | undefined
+                if (el && el.closest && el.closest('.user-marker')) {
+                    return
+                }
+            } catch (err) {
+                console.error('Error checking click target:', err)
+            }
+
+            if (isFollowing) return
+
+            popupRef.current?.remove()
+            activePopupUserId.current = null
+        })
 
         return () => {
             mapRef.current?.remove()
             mapRef.current = null
         }
-    }, [])
+    }, [setFollowUserId])
 
-    const renderPopup = (user: User) => {
-        const detailHTML = `
-            <div>
-                <h4 style="margin:0;">${user.name}</h4>
-                <p style="margin:0; font-size: 12px;">ID: ${user.id}</p>
-                <p style="margin:0; font-size: 12px;">Latitude: ${user.latitude.toFixed(5)}</p>
-                <p style="margin:0; font-size: 12px;">Longitude: ${user.longitude.toFixed(5)}</p>
+    useEffect(() => {
+        (window as any).followUser = (userId: string) => {
+            setFollowUserId(userId)
+            setIsFollowing(true)
+        }
+
+        (window as any).unfollowUser = () => {
+            setFollowUserId(null)
+            setIsFollowing(false)
+            popupRef.current?.remove()
+            activePopupUserId.current = null
+        }
+
+        return () => {
+            delete (window as any).followUser
+            delete (window as any).unfollowUser
+        }
+    }, [setFollowUserId])
+
+    const renderPopup = useCallback((user: User, isFollowing = false) => {
+        return `
+            <div style="font-family: sans-serif; min-width: 180px;">
+                <h3 style="margin: 0 0 4px;">${user.name}</h3>
+                <p style="margin: 0; font-size: 12px;">ID: ${user.id}</p>
+                <p style="margin: 0; font-size: 12px;">Latitude: ${user.latitude.toFixed(5)}</p>
+                <p style="margin: 0; font-size: 12px;">Longitude: ${user.longitude.toFixed(5)}</p>
+                ${isFollowing
+                ? `<button onclick="window.unfollowUser()" style="margin-top:8px; width:100%; padding:6px; background:#ef4444; color:white; border:none; border-radius:4px;cursor:pointer;">Unfollow</button>`
+                : `<button onclick="window.followUser('${user.id}')" style="margin-top:8px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;">Follow</button>`
+                }
             </div>
         `
-        return detailHTML
-    }
+    }, [])
 
     const handleMessage = useCallback((payload: any) => {
         if (payload.type === 'snapshot') {
             setUsers(payload.users)
-        } 
-        else if (payload.type === 'update') {
+        } else if (payload.type === 'update') {
             setUsers(payload.users)
             const mRef = markersRef.current
             const map = mapRef.current
             if (!map) return
 
-            payload.users.forEach((u: any) => {
+            payload.users.forEach((u: User) => {
                 const lngLat: [number, number] = [u.longitude, u.latitude]
+
                 if (!mRef[u.id]) {
                     const el = document.createElement('div')
                     el.className = 'user-marker'
-                    el.style.width = '12px'
-                    el.style.height = '12px'
-                    el.style.borderRadius = '50%'
-                    el.style.background = '#00bcd4'
-                    el.style.border = '2px solid white'
-                    el.style.boxShadow = '0 0 4px rgba(0,0,0,0.6)'
-                    el.style.cursor = 'pointer'
+                    el.style.cssText = `
+                        width:12px;height:12px;border-radius:50%;
+                        background:#00bcd4;border:2px solid white;
+                        box-shadow:0 0 4px rgba(0,0,0,0.6);
+                        cursor:pointer;
+                    `
 
                     const marker = new mapboxgl.Marker({ element: el })
                         .setLngLat(lngLat)
                         .addTo(map)
 
-                    el.addEventListener('click', ((user, lngLatCopy) => (e: MouseEvent) => {
-                        e.stopPropagation()
-                        
+                    el.addEventListener('click', (ev: MouseEvent) => {
+                        ev.stopPropagation()
+                        ev.preventDefault()
+
                         if (popupRef.current) {
-                            popupRef.current.setLngLat(lngLatCopy).setHTML(renderPopup(user)).addTo(map);
-                            (popupRef.current as any)._userId = user.id;
+                            popupRef.current
+                                .setLngLat(lngLat)
+                                .setHTML(renderPopup(u, followUserId === u.id))
+                                .addTo(map)
+                            activePopupUserId.current = u.id
                         }
-                    })(u, lngLat))
+                    })
 
                     mRef[u.id] = marker
-                } 
-                else {
+                } else {
                     mRef[u.id].setLngLat(lngLat)
                 }
 
-                if ((popupRef.current as any)?._userId === u.id && popupRef.current?.isOpen()) {
-                    popupRef.current.setLngLat([u.longitude, u.latitude]).setHTML(renderPopup(u))
+                if (activePopupUserId.current === u.id && popupRef.current?.isOpen()) {
+                    popupRef.current
+                        .setLngLat([u.longitude, u.latitude])
+                        .setHTML(renderPopup(u, followUserId === u.id))
                 }
 
                 if (u.id === followUserId) {
-                    map.easeTo({
-                        center: lngLat,
-                        duration: 1000
-                    })
-
-                    // popupRef.current?.remove()
-                    popupRef.current?.setLngLat(lngLat).setHTML(renderPopup(u)).addTo(map)
+                    map.easeTo({ center: lngLat, duration: 1000 })
+                    if (popupRef.current && (!activePopupUserId.current || activePopupUserId.current !== u.id)) {
+                        popupRef.current
+                            .setLngLat(lngLat)
+                            .setHTML(renderPopup(u, true))
+                            .addTo(map)
+                        activePopupUserId.current = u.id
+                    }
                 }
             })
         }
-    }, [setUsers, followUserId])
+    }, [setUsers, followUserId, renderPopup])
 
     useFakeSocket(handleMessage)
 
