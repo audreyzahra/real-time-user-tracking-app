@@ -15,7 +15,7 @@ Tujuannya adalah untuk menampilkan lokasi setidaknya 100 user secara real-time, 
 ## Arsitektur Aplikasi
 Komponen Utama :
 
-A. MapContainer
+**A. MapContainer**
 1. Menginisialisasi instance Mapbox GL Map.
 2. Menangani pembuatan dan update marker untuk setiap user.
 3. Menampilkan popup saat marker diklik atau saat follow mode aktif.
@@ -27,19 +27,19 @@ A. MapContainer
   - activePopupUserId → melacak popup user yang sedang terbuka.
   - isFollowingRef → melacak apakah sedang dalam mode mengikuti user.
     
-B. Sidebar
+**B. Sidebar**
 1. Menampilkan daftar user dan pencarian berdasarkan nama atau ID.
 2. Memungkinkan user dipilih dari sidebar untuk masuk ke follow mode.
 3. Tidak lagi memiliki tombol follow di sidebar, karena follow dilakukan melalui popup di peta.
    
-C. Store (Zustand)
+**C. Store (Zustand)**
 1. State management menggunakan Zustand:
 - users → daftar semua user beserta posisi terbarunya.
 - followUserId → ID user yang sedang diikuti.
 - setUsers → memperbarui daftar user.
 - setFollowUserId → mengganti user yang sedang diikuti.
   
-D. Simulasi WebSocket
+**D. Simulasi WebSocket**
 1. Menggunakan useFakeSocket untuk mengirim data snapshot (awal) dan update (tiap detik).
 2. Data pergerakan user disimulasikan menggunakan random walk dengan sedikit variasi pada latitude dan longitude untuk membuat pergerakan terlihat realistis.
 
