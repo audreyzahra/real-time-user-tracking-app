@@ -1,6 +1,6 @@
 # Realtime Map Tracking Simulator
 
-Aplikasi ini adalah Real-time User Location Tracking Simulator berbasis Next.js + Mapbox GL dengan integrasi WebSocket (disimulasikan menggunakan useFakeSocket).
+Aplikasi ini adalah Real-time User Location Tracking Simulator berbasis **Next.js** + **Mapbox GL** dengan integrasi WebSocket (disimulasikan menggunakan useFakeSocket).
 Tujuannya adalah untuk menampilkan lokasi setidaknya 100 user secara real-time, dengan fitur follow mode untuk memusatkan peta pada satu user yang sedang diikuti.
 
 ## Fitur
